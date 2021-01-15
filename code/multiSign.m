@@ -9,7 +9,7 @@ function [singleS, S, its, devArray, commutArray] = multiSign(A, debug)
     if(nargin == 1) debug = false; end
     
     n = size(A, 2);
-    k = 1;
+    k = 0;
     muFunc = @(B, invB, p) sqrt(norm(invB, p) / norm(B, p));
     
     singleA = cast(A, "single");
@@ -30,7 +30,7 @@ function [singleS, S, its, devArray, commutArray] = multiSign(A, debug)
     
     %Print out debug headers if debugging
     if(debug)
-        fprintf("k  \t |X_k-X_{k-1}|/|X_k| \t     |I - X_k^2|     \n");
+        fprintf("\nk  \t |X_k-X_{k-1}|/|X_k| \t     |I - X_k^2|     \n");
         fprintf("---\t---------------------\t---------------------\n");
         fprintf("   \t  Single     Double  \t  Single     Double  \n");
         fprintf("===\t=====================\t=====================\n");
@@ -53,71 +53,73 @@ function [singleS, S, its, devArray, commutArray] = multiSign(A, debug)
         Xnew = (mu * X + invX / mu) / 2;
         
         %Calculate various metrics from the iterates
-        iterDist(1)  = norm(singleXnew - singleX, inf) / norm(singleX, inf);
-        iterDist(2)  = norm(Xnew - X, inf) / norm(X, inf);
-        involDist(1) = norm(singleX*singleX - eye(n), inf);
-        involDist(2) = norm(X*X - eye(n), inf);
+        iterDist(1)  = norm(singleXnew - singleX, inf) / norm(singleXnew, inf);
+        iterDist(2)  = norm(Xnew - X, inf) / norm(Xnew, inf);
+        involDist(1) = norm(singleXnew*singleXnew - eye(n), inf);
+        involDist(2) = norm(Xnew*Xnew - eye(n), inf);
         devArray     = [devArray norm(singleXnew - cast(Xnew, "single"), inf)];
         commutArray  = [commutArray; norm(singleA*singleXnew - singleXnew * singleA, inf) norm(A*Xnew - Xnew*A, inf)];
+        
+        %Move Xnew into X and increment k
+        singleX = singleXnew;
+        X = Xnew;
+        k = k+1;
 
         %Print the metrics if debugging
         if(debug)
             fprintf("%3d\t%.4e %.4e\t%.4e %.4e\n", k, iterDist(1), iterDist(2), involDist(1), involDist(2));
         end
-        
-        %Move newX into X and increment k
-        singleX = singleXnew;
-        X = Xnew;
-        k = k+1;
     end
     
     %We calculate the final iteration of the algorithm by converting the
     %single precision iterate to double precision and running the algorithm
     %one more time
-    singleX = cast(singleX, "double");
+    castX = cast(singleX, "double");
     
     %Print the distance from commutativity of the converted iterate
     if (debug)
         fprintf("\n----------CONVERTING TO DOUBLE PRECISION---------\n");
-        fprintf("Norm of the commutator:\t%e\n", norm(singleX*A - A*singleX, inf));
+        fprintf("Norm of the commutator:\t%e\n", norm(castX*A - A*castX, inf));
     end
     
     %We add a correction to the iterate to improve its commutativity with A
-    singleX = singleX;
+    castX = castX + rand(n)*1e-8;
     
     %We repeat one final iteration of the algorithm in double precision
-    %Store the inverses X_k to only have to calculate them once.
-    singleInvX = inv(singleX);
-    invX = inv(X);
+    castIts = 0;
+    castIterDist = 1;
+    castInvolDist = 1;
+    castXnew = zeros(n);
+    while(castIterDist >= 1e-16 * n && castInvolDist >= 1e-16 *n && k <= 100)
+        %Store the inverses X_k to only have to calculate them once.
+        castInvX = inv(castX);
 
-    %Calculate the scaling factors mu
-    singleMu = muFunc(singleX, singleInvX, inf);
-    mu = muFunc(X, invX, inf);
+        %Calculate the scaling factors mu
+        castMu = muFunc(castX, castInvX, inf);
 
-    %Calculate the new iterates
-    singleXnew = (singleMu * singleX + singleInvX / singleMu) / 2;
-    Xnew = (mu * X + invX / mu) / 2;
+        %Calculate the new iterates
+        castXnew = (castMu * castX + castInvX / castMu) / 2;
 
-    %Calculate various metrics from the iterates
-    iterDist(1)  = norm(singleXnew - singleX, inf) / norm(singleX, inf);
-    iterDist(2)  = norm(Xnew - X, inf) / norm(X, inf);
-    involDist(1) = norm(singleX*singleX - eye(n), inf);
-    involDist(2) = norm(X*X - eye(n), inf);
-    devArray     = [devArray norm(singleXnew - cast(Xnew, "single"), inf)];
-    commutArray  = [commutArray; norm(singleA*singleXnew - singleXnew * singleA, inf) norm(A*Xnew - Xnew*A, inf)];
+        %Calculate various metrics from the iterates
+        castIterDist  = norm(castXnew - castX, inf) / norm(castXnew, inf);
+        castInvolDist = norm(castXnew*castXnew - eye(n), inf);
 
-    %Print the metrics if debugging
-    if(debug)
-        fprintf("%3d\t%.4e %.4e\t%.4e %.4e\n", k, iterDist(1), iterDist(2), involDist(1), involDist(2));
+        %Move castXnew into castX and increment castIts
+        castX = castXnew;
+        castIts = castIts+1;
+        
+        %Print the metrics if debugging
+        if(debug)
+            fprintf("%3d\t%.4e           \t%.4e           \n", k+castIts, castIterDist, castInvolDist);
+            fprintf("Norm of the commutator:\t%e\n", norm(castX*A - A*castX, inf));
+        end
     end
-
-    %Move newX into X and increment k
-    singleX = singleXnew;
-    X = Xnew;
-    k = k+1;
     
-    singleS = singleX;
+    singleS = castXnew;
     S = X;
-    its = k-1;
+    its = k+castIts;
 end
+
+
+
 
