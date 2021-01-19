@@ -1,5 +1,5 @@
-function [singleS, S, its, devArray, commutArray] = multiSign(A, debug)
-%MULTISIGN Computes matrix sign function in mixed single-double precision.
+function [singleS, S, its, devArray, commutArray, E] = multiSign(A, debug)
+%multiSign Computes matrix sign function in mixed single-double precision.
 %   Computes the matrix sign function of input matrix A using a norm scaled
 %   Newton iteration in single precision. We then add a correction to the
 %   result to increase its commutativity with A in double precision, and
@@ -83,7 +83,8 @@ function [singleS, S, its, devArray, commutArray] = multiSign(A, debug)
     end
     
     %We add a correction to the iterate to improve its commutativity with A
-    castX = castX + rand(n)*1e-8;
+    [castX, E] = commutLSQ(castX, A, debug);
+    %[castX, E] = randomCommut(castX, A, 10, debug);
     
     %We repeat one final iteration of the algorithm in double precision
     castIts = 0;
@@ -121,5 +122,66 @@ function [singleS, S, its, devArray, commutArray] = multiSign(A, debug)
 end
 
 
+function [Xnew, E] = commutLSQ(X, A, debug)
+%commutLSQ Computes the nearest matrix to X that commutes with A by LSQ
+%   Computes the lowest norm matrix E such that X + E commutes with A by
+%   solving a least squares problem in a system of n^2 equations (for X and
+%   A nxn matrices). The function returns the matrix X + E.
+    
+    %We check the input matrices have the same size
+    n = size(X,1);
+    if (size(A,1) ~= n)
+        error("Matrices X (%dx%d) and A (%dx%d) have incompatible sizes\n", size(X,1), size(X,2), size(A,1), size(A,2));
+    end
+    
+    %We form the matrix of the n^2 system and the target vector b
+    S = kron(eye(n), A) - kron(A', eye(n));
+    b = -S * X(:);
+    
+    %We solve the least squares problem using the SVD to find the minimal
+    %norm solution
+    [U, S, V] = svd(S);
+    vE = 0;
+    for i = 1:rank(S)
+        vE = vE + ((U(:,i)' * b) * V(:,i)) / S(i,i);
+    end
+    
+    %Form the corresponding matrix E and add it to X
+    E = reshape(vE, [n,n]);
+    Xnew = X + E;
+    
+    if(debug)
+        fprintf("         --- Commutativity correction ---        \n");
+        fprintf("              Norm(E) = %.4e                     \n", norm(E, inf));
+        fprintf("       Norm of the commutator:\t%e\n", norm(Xnew*A - A*Xnew, inf));
+    end
+end
 
+function [Xnew, E] = randomCommut(X, A, numTrials, debug)
 
+    %We check the input matrices have the same size
+    n = size(X,1);
+    if (size(A,1) ~= n)
+        error("Matrices X (%dx%d) and A (%dx%d) have incompatible sizes\n", size(X,1), size(X,2), size(A,1), size(A,2));
+    end
+    
+    E = zeros(n);
+    commut = norm((X+E)*A - A*(X+E), inf);
+    for i=1:numTrials
+        temp = rand(n);
+        temp = temp * (5e-7 / norm(temp, inf));
+        tempX = X+temp;
+        tempNorm = norm(tempX*A - A*tempX, inf);
+        if tempNorm < commut
+            E = temp;
+            commut = tempNorm;
+        end
+    end
+    Xnew = X + E;
+    
+    if(debug)
+        fprintf("         --- Commutativity correction ---        \n");
+        fprintf("              Norm(E) = %.4e                     \n", norm(E, inf));
+        fprintf("       Norm of the commutator:\t%e\n", norm(Xnew*A - A*Xnew, inf));
+    end
+end
