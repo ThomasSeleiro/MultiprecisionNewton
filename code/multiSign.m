@@ -1,24 +1,31 @@
 function [S, its, E] ... 
-    = multiSign(A, type, debug)
+    = multiSign(A, type, calcE, debug)
 %multiSign Computes matrix sign function in mixed single-double precision.
 %   Computes the matrix sign function of input matrix A using a norm scaled
 %   Newton iteration in single precision. We then add a correction to the
 %   result to increase its commutativity with A in double precision, and
 %   perform a final double precision iteration.
 
-    %%Process the input argument
+    %Process the input arguments
     switch nargin
         case 1
             debug = false;
             type = "single";
             switchPrecision = true;
             typeRoundoff = 1e-8;
+            calcE = true;
         case 2
             debug = false;
             [type, switchPrecision, typeRoundoff] = processTypeInput(type);
+            calcE = true;
         case 3
+            debug = false;
+            [type, switchPrecision, typeRoundoff] = processTypeInput(type);
+            calcE = calcE;
+        case 4
             debug = debug;
             [type, switchPrecision, typeRoundoff] = processTypeInput(type);
+            calcE = calcE;
     end
     
     %We declare variables to be used in the function
@@ -60,7 +67,11 @@ function [S, its, E] ...
         end
 
         %We add a correction to the iterate to improve its commutativity with A
-        [X, E] = commutLSQ(X, A, debug);
+        if(calcE)
+            [X, E] = commutLSQ(X, A, debug);
+        else
+            E = zeros(n);
+        end
 
         %We calculate at most 3 iterations, since quadratic convergence
         %should ensure that the convergence is unitary after only one
@@ -82,8 +93,11 @@ function [S, its, E] ...
             newK = newK+1;
         end
         its = its + newK;
+    else
+        %Return the argument E = 0 if we do not add a correction
+        E = zeros(n);
     end
-
+    
     %Form S to return it
     S = X;
 end
@@ -119,6 +133,7 @@ function [Xnew, iterDist, involDist] = signNewtonStep(X, k, debug)
 %   using the determinant and spectral scaling factor).
 %   Note that k corresponds to the index of the iterate X NOT Xnew
 
+    n = size(X, 1);
     %Store the inverse to only calculate it once
     invX = inv(X);
     %Calculate the 1,inf norm scaling factor
