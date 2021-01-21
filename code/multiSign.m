@@ -79,7 +79,7 @@ function [S, its, E] ...
         %and the accuracy can be improved by one or two more iterations)
         newK = 0;
         while(iterDist >= n*typeRoundoff && involDist >= n*typeRoundoff ...
-            && newK <= 3)
+            && newK < 3)
             %Calculate the next Newton iterate
             [Xnew, iterDist, involDist] = signNewtonStep(X,k+newK,debug);
             

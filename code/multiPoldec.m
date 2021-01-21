@@ -54,7 +54,7 @@ function [U, H, its] = multiPoldec(A, type, debug)
         %and the accuracy can be improved by one or two more iterations)
         newK = 0;
         while(iterDist >= n*typeRoundoff && unitDist >= n*typeRoundoff ...
-            && newK <= 3)
+            && newK < 3)
             %Calculate the next Newton iterate
             [Xnew, iterDist, unitDist] = poldecNewtonStep(X,k+newK,debug);
             
