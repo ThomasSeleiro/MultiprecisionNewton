@@ -1,19 +1,21 @@
 function [U, H, its] = multiPoldec(A, type, debug)
 %multiPoldec Computes the polar decomposition in multiprecision
     
+    %A hash map to store the roundoffs of datatypes for conveniance
+    roundoff = containers.Map(["single", "double"], [1e-8, 1e-16]);
+
     %Process the input argument
     switch nargin
         case 1
             debug = false;
             type = "single";
             switchPrecision = true;
-            typeRoundoff = 1e-8;
         case 2
             debug = false;
-            [type, switchPrecision, typeRoundoff] = processTypeInput(type);
+            [type, switchPrecision] = processTypeInput(type);
         case 3
             debug = debug;
-            [type, switchPrecision, typeRoundoff] = processTypeInput(type);
+            [type, switchPrecision] = processTypeInput(type);
     end
     
     %We declare variables to be used in the function
@@ -29,7 +31,7 @@ function [U, H, its] = multiPoldec(A, type, debug)
     
     %Begin the loop to calculate the iterates
     k = 0;
-    while(iterDist >= n*typeRoundoff && unitDist >= n*typeRoundoff ...
+    while(iterDist >= n*roundoff(type) && unitDist >= n*roundoff(type) ...
             && k <= 100)
         %Calculate the next Newton iterate
         [Xnew, iterDist, unitDist] = poldecNewtonStep(X, k, debug);
@@ -46,15 +48,15 @@ function [U, H, its] = multiPoldec(A, type, debug)
     %again
     if(switchPrecision && type == "single")
         X = cast(X, "double");
-        typeRoundoff = 1e-16;
+        type = "double";
         
         %We calculate at most 3 iterations, since quadratic convergence
         %should ensure that the convergence is unitary after only one
         %iteration (in practice this might not be guaranteed immediately
         %and the accuracy can be improved by one or two more iterations)
         newK = 0;
-        while(iterDist >= n*typeRoundoff && unitDist >= n*typeRoundoff ...
-            && newK < 3)
+        while(iterDist >= n*roundoff(type) ...
+                && unitDist >= n*roundoff(type) && newK < 3)
             %Calculate the next Newton iterate
             [Xnew, iterDist, unitDist] = poldecNewtonStep(X,k+newK,debug);
             
@@ -78,20 +80,17 @@ end
 
 
 
-function [type, switchPrecision, typeRoundoff] = processTypeInput(inputType)
+function [type, switchPrecision] = processTypeInput(inputType)
 %processTypeInput Processes the type argument for multiPoldec
     if ismember(inputType, ["single", "s"])
         type = "single";
         switchPrecision = true;
-        typeRoundoff = 1e-8;
     elseif ismember(inputType, ["double", "d"])
         type = "double";
         switchPrecision = false;
-        typeRoundoff = 1e-16;
     elseif ismember(inputType, ["singleOnly", "so"])
         type = "single";
         switchPrecision = false;
-        typeRoundoff = 1e-8;
     else
         error('Input argument %s not recognised. Use "single", '...
             + '"double" or "singleOnly"', inputType);
@@ -107,6 +106,7 @@ function [Xnew, iterDist, unitDist] = poldecNewtonStep(X, k, debug)
 %   using the optimal scaling factor using the 2 norm).
 %   Note that k corresponds to the index of the iterate X NOT Xnew
 
+    n = size(X, 1);
     %Store the inverse to only calculate it once
     invX = inv(X);
     %Calculate the 1,inf norm scaling factor

@@ -6,25 +6,27 @@ function [S, its, E] ...
 %   result to increase its commutativity with A in double precision, and
 %   perform a final double precision iteration.
 
+    %A hash map to store the roundoffs of datatypes for conveniance
+    roundoff = containers.Map(["single", "double"], [1e-8, 1e-16]);
+    
     %Process the input arguments
     switch nargin
         case 1
             debug = false;
             type = "single";
             switchPrecision = true;
-            typeRoundoff = 1e-8;
             calcE = true;
         case 2
             debug = false;
-            [type, switchPrecision, typeRoundoff] = processTypeInput(type);
+            [type, switchPrecision] = processTypeInput(type);
             calcE = true;
         case 3
             debug = false;
-            [type, switchPrecision, typeRoundoff] = processTypeInput(type);
+            [type, switchPrecision] = processTypeInput(type);
             calcE = calcE;
         case 4
             debug = debug;
-            [type, switchPrecision, typeRoundoff] = processTypeInput(type);
+            [type, switchPrecision] = processTypeInput(type);
             calcE = calcE;
     end
     
@@ -41,7 +43,7 @@ function [S, its, E] ...
     
     %Begin the loop to calculate the iterates
     k = 0;
-    while(iterDist >= n*typeRoundoff && involDist >= n*typeRoundoff ...
+    while(iterDist >= n*roundoff(type) && involDist >= n*roundoff(type) ...
             && k <= 100)
         %Calculate the next Newton iterate
         [Xnew, iterDist, involDist] = signNewtonStep(X, k, debug);
@@ -58,7 +60,7 @@ function [S, its, E] ...
     %again
     if(switchPrecision && type == "single")
         X = cast(X, "double");
-        typeRoundoff = 1e-16;
+        type = "double";
     
         %Print the distance from commutativity of the converted iterate
         if (debug)
@@ -78,8 +80,8 @@ function [S, its, E] ...
         %iteration (in practice this might not be guaranteed immediately
         %and the accuracy can be improved by one or two more iterations)
         newK = 0;
-        while(iterDist >= n*typeRoundoff && involDist >= n*typeRoundoff ...
-            && newK < 3)
+        while(iterDist >= n*roundoff(type) ... 
+                && involDist >= n*roundoff(type) && newK < 3)
             %Calculate the next Newton iterate
             [Xnew, iterDist, involDist] = signNewtonStep(X,k+newK,debug);
             
@@ -104,20 +106,17 @@ end
 
 
 
-function [type, switchPrecision, typeRoundoff] = processTypeInput(inputType)
+function [type, switchPrecision] = processTypeInput(inputType)
 %processTypeInput Processes the type argument for multiPoldec
     if ismember(inputType, ["single", "s"])
         type = "single";
         switchPrecision = true;
-        typeRoundoff = 1e-8;
     elseif ismember(inputType, ["double", "d"])
         type = "double";
         switchPrecision = false;
-        typeRoundoff = 1e-16;
     elseif ismember(inputType, ["singleOnly", "so"])
         type = "single";
         switchPrecision = false;
-        typeRoundoff = 1e-8;
     else
         error('Input argument %s not recognised. Use "single", '...
             + '"double" or "singleOnly"', inputType);
