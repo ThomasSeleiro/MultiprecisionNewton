@@ -172,7 +172,7 @@ function [Xnew, E] = commutLSQ(X, A, debug)
     %We solve the least squares problem using the SVD to find the minimal
     %norm solution
     [U, S, V] = svd(S);
-    vE = 0;
+    vE = zeros(size(b));
     for i = 1:rank(S)
         vE = vE + ((U(:,i)' * b) * V(:,i)) / S(i,i);
     end
