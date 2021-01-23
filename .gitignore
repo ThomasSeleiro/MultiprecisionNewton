@@ -4,3 +4,7 @@ Docs/
 *.aux
 *.log
 *.gz
+*.bbl
+*.blg
+*.fdb*
+*.fls
