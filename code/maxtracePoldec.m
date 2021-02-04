@@ -1,16 +1,31 @@
-function [U, H, sweeps] = maxtracePoldec(A, u)
+function [U, H, sweeps] = maxtracePoldec(A, u, debug)
 %maxtracePoldec Computes polar decomp with Givens and Householder matrices
 %Computes the polar decomposition of a matrix A by maximising the trace of
 %A by applying Givens and Householder transformations.
 %The algorithm is outlined in Matthew Smith's PhD thesis (2002 p.84)
     
+    switch nargin
+        case 1
+            u = float_params("double");
+            debug = false;
+        case 2
+            debug = false;
+    end
+
     n = size(A,1);
     W = eye(n);
+    
+    if(debug)
+        lastTrace = trace(A);
+        fprintf("\nSweep     |A-A'|/|A|     traceDiff \n");
+        fprintf("===================================\n");
+    end
     
     %We perform several sweeps to make the A symmetric and maximise its
     %trace
     sweeps = 0;
-    while(norm(A - A', inf)/2 > u * norm(A, inf))
+    symmDist = norm(A - A', inf) / norm(A, inf);
+    while(symmDist > u)
         %We first make every diagonal element positive.
         for i = 1:n
             if A(i,i) < 0
@@ -30,7 +45,16 @@ function [U, H, sweeps] = maxtracePoldec(A, u)
                 end
             end
         end
+        
+        symmDist = norm(A - A', inf) / norm(A, inf);
         sweeps = sweeps + 1;
+        if(debug)
+            traceDiff = abs((trace(A) - lastTrace) / trace(A));
+           %fprintf("Sweep     |A-A'|/|A|     traceDiff \n");
+            fprintf(" %3d      %.4e"   +"     %.4e\n", sweeps, ...
+                symmDist, traceDiff);
+            lastTrace = trace(A);
+        end
     end
     
     %If the resulting matrix is not positive definite apply a householder
