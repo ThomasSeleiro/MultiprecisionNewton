@@ -7,7 +7,9 @@ function [S, its, E] ...
 %   perform a final double precision iteration.
 
     %A hash map to store the roundoffs of datatypes for conveniance
-    roundoff = containers.Map(["single", "double"], [1e-8, 1e-16]);
+    [uSingle] = float_params("single");
+    [uDouble] = float_params("double");
+    roundoff = containers.Map(["single", "double"], [uSingle, uDouble]);
     
     %Process the input arguments
     switch nargin
