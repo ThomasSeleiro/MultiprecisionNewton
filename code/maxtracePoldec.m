@@ -15,6 +15,12 @@ function [U, H, sweeps] = maxtracePoldec(A, u, debug)
     n = size(A,1);
     W = eye(n);
     
+    %Check the input u is not input as a string
+    if(isa(u,'string'))
+        %Otherwise try converting it using float_params
+        u = float_params("double");
+    end
+    
     if(debug)
         lastTrace = trace(A);
         fprintf("\nSweep     |A-A'|/|A|     traceDiff \n");
@@ -25,7 +31,7 @@ function [U, H, sweeps] = maxtracePoldec(A, u, debug)
     %trace
     sweeps = 0;
     symmDist = norm(A - A', inf) / norm(A, inf);
-    while(symmDist > u)
+    while(symmDist > u*sqrt(n))
         %We first make every diagonal element positive.
         for i = 1:n
             if A(i,i) < 0
