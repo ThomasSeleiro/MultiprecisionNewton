@@ -63,7 +63,7 @@ function [U, H, sweeps] = maxtracePoldec(A, u, debug)
     [lambdaMin, indexMin] = min(diag(D));
     if(lambdaMin < 0)
         x = V(:, indexMin);
-        G = I - x*x';
+        G = eye(n) - x*x';
         A = G' * A;
         W = W  * G;
     end
