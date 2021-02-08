@@ -31,7 +31,7 @@ function [U, H, sweeps] = maxtracePoldec(A, u, debug)
     %trace
     sweeps = 0;
     symmDist = norm(A - A', inf) / norm(A, inf);
-    while(symmDist > u*sqrt(n))
+    while(symmDist > u*n)
         %We first make every diagonal element positive.
         for i = 1:n
             if A(i,i) < 0
