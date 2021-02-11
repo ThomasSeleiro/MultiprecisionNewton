@@ -48,6 +48,17 @@ function [U, H, sweeps] = twobytwoPoldec(A, u, debug)
         end
     end
 
+    %If the resulting matrix is not positive definite apply a householder
+    %transformation
+    [V, D] = eig(A);
+    [lambdaMin, indexMin] = min(diag(D));
+    if(lambdaMin < 0)
+        x = V(:, indexMin);
+        G = eye(n) - 2*x*x';
+        A = G' * A;
+        W = W  * G;
+    end
+    
     %Finally from U and H
     U = W;
     H = A;
