@@ -1,4 +1,4 @@
-function [U, H, sweeps] = maxtracePoldec(A, u, debug)
+function [U, H, sweeps, householder] = maxtracePoldec(A, u, debug)
 %maxtracePoldec Computes polar decomp with Givens and Householder matrices
 %Computes the polar decomposition of a matrix A by maximising the trace of
 %A by applying Givens and Householder transformations.
@@ -14,6 +14,7 @@ function [U, H, sweeps] = maxtracePoldec(A, u, debug)
 
     n = size(A,1);
     W = eye(n);
+    householder = false;
 
     %Check the input u is not input as a string
     if(isa(u,'string'))
@@ -72,6 +73,7 @@ function [U, H, sweeps] = maxtracePoldec(A, u, debug)
         G = eye(n) - 2*x*x';
         A = G' * A;
         W = W  * G;
+        householder = true;
     end
 
 

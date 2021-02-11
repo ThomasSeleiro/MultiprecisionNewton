@@ -1,4 +1,4 @@
-function [U, H, sweeps] = twobytwoPoldec(A, u, debug)
+function [U, H, sweeps, householder] = twobytwoPoldec(A, u, debug)
 %twobytwoPoldec Computes the polar decomposition by using 2x2 poldec
 
     switch nargin
@@ -11,6 +11,7 @@ function [U, H, sweeps] = twobytwoPoldec(A, u, debug)
 
     n = size(A,1);
     W = eye(n);
+    householder = false;
 
     %Check the input u is not input as a string
     if(isa(u,'string'))
@@ -57,6 +58,7 @@ function [U, H, sweeps] = twobytwoPoldec(A, u, debug)
         G = eye(n) - 2*x*x';
         A = G' * A;
         W = W  * G;
+        householder = true;
     end
     
     %Finally from U and H
