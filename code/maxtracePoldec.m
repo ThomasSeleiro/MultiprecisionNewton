@@ -3,7 +3,7 @@ function [U, H, sweeps] = maxtracePoldec(A, u, debug)
 %Computes the polar decomposition of a matrix A by maximising the trace of
 %A by applying Givens and Householder transformations.
 %The algorithm is outlined in Matthew Smith's PhD thesis (2002 p.84)
-    
+
     switch nargin
         case 1
             u = float_params("double");
@@ -14,19 +14,19 @@ function [U, H, sweeps] = maxtracePoldec(A, u, debug)
 
     n = size(A,1);
     W = eye(n);
-    
+
     %Check the input u is not input as a string
     if(isa(u,'string'))
         %Otherwise try converting it using float_params
         u = float_params("double");
     end
-    
+
     if(debug)
         lastTrace = trace(A);
         fprintf("\nSweep     |A-A'|/|A|     traceDiff \n");
         fprintf("===================================\n");
     end
-    
+
     %We perform several sweeps to make the A symmetric and maximise its
     %trace
     sweeps = 0;
@@ -51,7 +51,7 @@ function [U, H, sweeps] = maxtracePoldec(A, u, debug)
                 end
             end
         end
-        
+
         symmDist = norm(A - A', inf) / norm(A, inf);
         sweeps = sweeps + 1;
         if(debug)
@@ -62,19 +62,19 @@ function [U, H, sweeps] = maxtracePoldec(A, u, debug)
             lastTrace = trace(A);
         end
     end
-    
+
     %If the resulting matrix is not positive definite apply a householder
     %transformation
     [V, D] = eig(A);
     [lambdaMin, indexMin] = min(diag(D));
     if(lambdaMin < 0)
         x = V(:, indexMin);
-        G = eye(n) - x*x';
+        G = eye(n) - 2*x*x';
         A = G' * A;
         W = W  * G;
     end
-    
-    
+
+
     %Finally from U and H
     U = W;
     H = A;
@@ -122,4 +122,3 @@ function [Anew, Wnew] = givensReflMax(A, W, i, j)
     Wnew(:, i) = c*W(:, i) + s*W(:, j);
     Wnew(:, j) = s*W(:, i) - c*W(:, j);
 end
-
