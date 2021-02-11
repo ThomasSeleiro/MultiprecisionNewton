@@ -263,15 +263,23 @@ However, the trace difference doesn't drop as low as
 
 \section{Implementation of the methods}
 
+All the MATLAB code used can be found in the \texttt{code} folder of 
+the project.
+
 The implementation of a flexible single-double precision Newton 
 Iteration for the polar decomposition is contained in 
-\emph{multiPoldec.m}:
+\texttt{multiPoldec.m}.
 
-{\small
-	\VerbatimInput{../code/poldec.m}
-}
+The implementation of the trace maximisation algorithm using Givens 
+matrices in~{[\citealp{smit2002}]} is contained in 
+\texttt{maxtracePoldec.m}.
 
-\bibliography{multi-precisionBib}
+The implementation of the trace maximisation algorithm using the 
+$2\times 2$ polar decomposition is contained in 
+\texttt{twobytwoPoldec.m}.
+
+
+\bibliography{../MultiprecisionBib}
 \bibliographystyle{siam}
 
 \end{document}
