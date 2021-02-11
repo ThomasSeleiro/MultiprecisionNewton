@@ -56,7 +56,7 @@ function [U, H, sweeps, householder] = maxtracePoldec(A, u, debug)
         symmDist = norm(A - A', inf) / norm(A, inf);
         sweeps = sweeps + 1;
         if(debug)
-            traceDiff = abs((trace(A) - lastTrace) / trace(A));
+           traceDiff = abs((trace(A) - lastTrace) / trace(A));
            %fprintf("Sweep     |A-A'|/|A|     traceDiff \n");
             fprintf(" %3d      %.4e"   +"     %.4e\n", sweeps, ...
                 symmDist, traceDiff);
@@ -70,7 +70,7 @@ function [U, H, sweeps, householder] = maxtracePoldec(A, u, debug)
     [lambdaMin, indexMin] = min(diag(D));
     if(lambdaMin < 0)
         x = V(:, indexMin);
-        G = eye(n) - 2*x*x';
+        G = eye(n) - 2*(x*x');
         A = G' * A;
         W = W  * G;
         householder = true;

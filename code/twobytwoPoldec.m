@@ -55,7 +55,7 @@ function [U, H, sweeps, householder] = twobytwoPoldec(A, u, debug)
     [lambdaMin, indexMin] = min(diag(D));
     if(lambdaMin < 0)
         x = V(:, indexMin);
-        G = eye(n) - 2*x*x';
+        G = eye(n) - 2*(x*x');
         A = G' * A;
         W = W  * G;
         householder = true;
